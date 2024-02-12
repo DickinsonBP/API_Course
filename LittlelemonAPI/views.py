@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from rest_framework.response import Response
 from rest_framework import status, viewsets, generics
 from rest_framework.decorators import api_view
@@ -21,3 +21,21 @@ class MenuItemView(generics.ListCreateAPIView):
 class SingleMenuItemView(generics.RetrieveUpdateAPIView, generics.DestroyAPIView):
     queryset = MenuItem.objects.all()
     serializer_class = MenuItemSerializer
+    
+@api_view(['GET','POST'])
+def menu_items(request):
+    if(request.method == 'GET'):
+        items = MenuItem.objects.select_related('category').all()
+        serlized_item = MenuItemSerializer(items, many=True)
+        return Response(serlized_item.data)
+    if(request.method == 'POST'):
+        serlized_item = MenuItemSerializer(data=request.data)
+        serlized_item.is_valid(raise_exception=True) #comprobar que todos los campos son correctos, si falta alguno, mostrar error.
+        serlized_item.save()
+        return Response(serlized_item.data, status.HTTP_201_CREATED)
+
+@api_view()
+def single_item(request, id):
+    item = get_object_or_404(MenuItem, pk=id)
+    serlized_item = MenuItemSerializer(item)
+    return Response(serlized_item.data)
