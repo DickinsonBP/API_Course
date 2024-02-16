@@ -29,6 +29,8 @@ def menu_items(request):
         category_name = request.query_params.get('category')
         to_price = request.query_params.get('to_price')
         search = request.query_params.get('search')
+        ordering = request.query_params.get('ordering')
+        
         # filtrado
         if category_name:
             items = items.filter(category__title=category_name)
@@ -38,9 +40,15 @@ def menu_items(request):
         #busqueda
         if search:
             items = items.filter(title__startswith=search)
+        
+        # ordenado
+        if ordering:
+            ordering_fields = ordering.split(",")
+            items = items.order_by(*ordering_fields)
             
         serlized_item = MenuItemSerializer(items, many=True)
         return Response(serlized_item.data)
+    
     if(request.method == 'POST'):
         serlized_item = MenuItemSerializer(data=request.data)
         serlized_item.is_valid(raise_exception=True) #comprobar que todos los campos son correctos, si falta alguno, mostrar error.
