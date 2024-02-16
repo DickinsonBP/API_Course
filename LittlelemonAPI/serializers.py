@@ -26,7 +26,7 @@ class MenuItemSerializer(serializers.ModelSerializer):
     def calculate_tax(self, product:MenuItem):
         from decimal import Decimal
         return product.price * Decimal(1.1)
-serializers.H
+
 
 # class MenuItemSerializer(serializers.Serializer):
 #     id = serializers.IntegerField()
