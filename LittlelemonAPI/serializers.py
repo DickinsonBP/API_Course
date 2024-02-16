@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from .models import MenuItem, Category
 
+import bleach
+
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -26,6 +28,14 @@ class MenuItemSerializer(serializers.ModelSerializer):
     def calculate_tax(self, product:MenuItem):
         from decimal import Decimal
         return product.price * Decimal(1.1)
+    
+    def validate(self, attrs):
+        attrs['title'] = bleach.clean(attrs['title'])
+        if(attrs['price']<2):
+            raise serializers.ValidationError('Price should not be less than 2.0')
+        if(attrs['inventory']<0):
+            raise serializers.ValidationError('Stock cannot be negative')
+        return super().validate(attrs)
 
 
 # class MenuItemSerializer(serializers.Serializer):
