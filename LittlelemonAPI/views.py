@@ -4,14 +4,15 @@ from django.core.paginator import Paginator, EmptyPage
 
 from rest_framework.response import Response
 from rest_framework import status, viewsets, generics
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 
 
 from .models import MenuItem
 from .serializers import MenuItemSerializer
+from .throttles import TenCallsPerMinute
 
 # Create your views here.
 #ListCreateAPIView can display records and accept POST calls to create a new record
@@ -90,4 +91,16 @@ def manager_view(request):
     if request.user.groups.filter(name='Manager').exists():
         return Response({"message":"Only Manager Should See This"})
     else:
-        return Response({"message":"You are not authorized"}, 403) 
+        return Response({"message":"You are not authorized"}, 403)
+    
+    
+@api_view()
+@throttle_classes([AnonRateThrottle])
+def throttle_check(request):
+    return Response({"message":"successful"})
+
+@api_view()
+@permission_classes([IsAuthenticated])
+@throttle_classes([TenCallsPerMinute])
+def throttle_check_auth(request):
+    return Response({"message":"message for the logged in users only"})
