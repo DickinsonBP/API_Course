@@ -1,10 +1,14 @@
 from django.shortcuts import render, get_object_or_404
-from rest_framework.response import Response
-from rest_framework import status, viewsets, generics
-from rest_framework.decorators import api_view
-from rest_framework.views import APIView
 
 from django.core.paginator import Paginator, EmptyPage
+
+from rest_framework.response import Response
+from rest_framework import status, viewsets, generics
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+
+
 
 from .models import MenuItem
 from .serializers import MenuItemSerializer
@@ -74,3 +78,16 @@ def single_item(request, id):
     item = get_object_or_404(MenuItem, pk=id)
     serlized_item = MenuItemSerializer(item)
     return Response(serlized_item.data)
+
+@api_view()
+@permission_classes([IsAuthenticated])
+def secret(request):
+    return Response({"message":"Some secret message"})
+
+@api_view()
+@permission_classes([IsAuthenticated])
+def manager_view(request):
+    if request.user.groups.filter(name='Manager').exists():
+        return Response({"message":"Only Manager Should See This"})
+    else:
+        return Response({"message":"You are not authorized"}, 403) 
