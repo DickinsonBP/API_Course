@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'djoser',
     'LittlelemonAPI',
 ]
 
@@ -134,10 +135,15 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_AUTHENTICATION_CLASSES':(
         'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_THROTTLE_RATES': {
         'anon':'2/minute',
         'user':'5/minute',
         'ten':'10/minute'
     }
+}
+
+DJOSER = {
+    "USER_ID_FIELD" : "username"
 }
