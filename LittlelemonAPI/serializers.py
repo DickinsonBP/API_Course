@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import *
-
+from decimal import Decimal
 
 from datetime import datetime
 
@@ -32,9 +32,14 @@ class UserSerializer(serializers.ModelSerializer):
 class CartSerializer(serializers.ModelSerializer):
     unit_price = serializers.DecimalField(max_digits=6, decimal_places=2, source='menuitem.price', read_only=True)
     name = serializers.CharField(source='menuitem.title', read_only=True)
+    total_price = serializers.SerializerMethodField(method_name = 'calculate_total_price')
     class Meta:
         model = Cart
-        fields = ['user_id', 'menuitem', 'name', 'quantity', 'unit_price', 'price']
+        fields = ['user_id', 'menuitem', 'name', 'quantity', 'unit_price', 'price', 'total_price']
         extra_kwargs = {
             'price': {'read_only': True}
         }
+    
+    def calculate_total_price(self, cart_items:Cart):
+        return cart_items.price
+        

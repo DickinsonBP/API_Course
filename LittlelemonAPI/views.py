@@ -20,6 +20,7 @@ from .serializers import *
 class CategoryListView(ListCreateAPIView):
     queryset = Category.objects.all().order_by('id')
     serializer_class = CategorySerializer
+    permission_classes = [IsAdminUser]
 
     def get_permissions(self):
         if self.request.method == 'POST':
@@ -29,6 +30,7 @@ class CategoryListView(ListCreateAPIView):
 class SingleCategoryView(RetrieveAPIView, RetrieveUpdateDestroyAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    
     def get_permissions(self):
         if self.request.method == 'POST' or self.request.method == 'PUT' \
                 or self.request.method == 'DELETE' or self.request.method == 'PATCH':
@@ -120,12 +122,23 @@ def delivery_crew(request):
     return Response({"message":"error"}, status.HTTP_400_BAD_REQUEST)
 
 
-class CartView(APIView):
-    def get(self, request):
-        cart_items = Cart.objects.all()
-        serializer = CartSerializer(cart_items, many=True)
-        return Response(serializer.data)
-    def post(self, request):
-        return Response({"message":"HOLA"})
+class CartView(ListCreateAPIView):
+    serializer_class = CartSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        user = self.request.user
+        return Cart.objects.filter(user=user)
+
+    def perform_create(self, serializer):
+        menuitem_id = self.request.data.get('menuitem')
+        quantity = self.request.data.get('quantity')
+        unit_price = MenuItem.objects.get(pk=menuitem_id).price
+        quantity = int(quantity)
+        price = quantity * unit_price
+        serializer.save(user=self.request.user, price=price, unit_price=unit_price)
+
     def delete(self, request):
-        return Response({"message":"HOLA"})
+        user = self.request.user
+        Cart.objects.filter(user=user).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
