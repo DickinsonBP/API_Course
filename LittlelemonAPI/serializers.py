@@ -1,45 +1,40 @@
 from rest_framework import serializers
-from .models import MenuItem, Category
+from .models import *
 
-import bleach
+
+from datetime import datetime
 
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['id','slug','title']
-
+        
 class MenuItemSerializer(serializers.ModelSerializer):
-    stock = serializers.IntegerField(source='inventory')
-    price_after_tax = serializers.SerializerMethodField(method_name= 'calculate_tax')
     category = CategorySerializer(read_only=True)
     category_id = serializers.IntegerField(write_only=True)
     class Meta:
         model = MenuItem
-        fields = ['id','title','price','stock','price_after_tax','category', 'category_id']
+        fields = ['id','title','price','featured','category','category_id']
+
+class UserSerializer(serializers.ModelSerializer):
+    Date_Joined = serializers.SerializerMethodField()
+    date_joined = serializers.DateTimeField(write_only=True, default=datetime.now)
+    email = serializers.EmailField(required=False)
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'date_joined', 'Date_Joined']
+
+    def get_Date_Joined(self, obj):
+        return obj.date_joined.strftime('%Y-%m-%d')
+
+class CartSerializer(serializers.ModelSerializer):
+    unit_price = serializers.DecimalField(max_digits=6, decimal_places=2, source='menuitem.price', read_only=True)
+    name = serializers.CharField(source='menuitem.title', read_only=True)
+    class Meta:
+        model = Cart
+        fields = ['user_id', 'menuitem', 'name', 'quantity', 'unit_price', 'price']
         extra_kwargs = {
-            'price' : {
-                'min_value':2,
-            },
-            'inventory' : {
-                'min_value':0,
-            }
+            'price': {'read_only': True}
         }
-    def calculate_tax(self, product:MenuItem):
-        from decimal import Decimal
-        return product.price * Decimal(1.1)
-    
-    def validate(self, attrs):
-        attrs['title'] = bleach.clean(attrs['title'])
-        if(attrs['price']<2):
-            raise serializers.ValidationError('Price should not be less than 2.0')
-        if(attrs['inventory']<0):
-            raise serializers.ValidationError('Stock cannot be negative')
-        return super().validate(attrs)
-
-
-# class MenuItemSerializer(serializers.Serializer):
-#     id = serializers.IntegerField()
-#     title = serializers.CharField(max_length=255)
-#     price = serializers.DecimalField(max_digits=6, decimal_places=2)
-#     inventory = serializers.IntegerField()
