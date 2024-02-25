@@ -9,6 +9,8 @@ urlpatterns = [
     path('categories', views.CategoryListView.as_view()),
     path('categories/<int:pk>', views.SingleCategoryView.as_view()),
     path('cart', views.CartView.as_view()),
+    path('orders', views.OrderView.as_view()),
+    path('orders/<int:pk>', views.SingleOrderView.as_view()),
     path('api-token-auth', obtain_auth_token),
     path('groups/manager/users', views.managers),
     path('groups/delivery-crew/users', views.delivery_crew),

@@ -24,7 +24,6 @@ class Cart(models.Model):
     quantity = models.SmallIntegerField()
     unit_price = models.DecimalField(max_digits=6, decimal_places=2)
     price = models.DecimalField(max_digits=6, decimal_places=2)
-    total_price = models.DecimalField(max_digits=6, decimal_places=2)
 
     class Meta:
         unique_together = ('menuitem','user')
