@@ -56,11 +56,11 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     Date = serializers.SerializerMethodField()
     date = serializers.DateTimeField(write_only=True, default=datetime.now)
-    order_items = serializers.SerializerMethodField(method_name='get_order_items')
+    # order_items = serializers.SerializerMethodField(method_name='get_order_items')
     
     class Meta:
         model = Order
-        fields = ['id', 'user', 'delivery_crew', 'status', 'total', 'Date', 'date','order_items']
+        fields = ['id', 'user', 'delivery_crew', 'status', 'total', 'Date', 'date']
         extra_kwargs = {
             'total': {'read_only': True}
         }

@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, BasePermission
 from rest_framework.generics import ListCreateAPIView, ListAPIView, RetrieveUpdateDestroyAPIView, RetrieveAPIView
 from rest_framework.views import APIView
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
@@ -14,6 +14,17 @@ from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 from .models import *
 from .serializers import *
 # Create your views here.
+
+class IsAdminOrManager(BasePermission):
+    def has_permission(self, request, view):
+        if request.user.is_superuser:
+            return True
+        
+        manager_group = Group.objects.get(name='Manager')
+        if manager_group in request.user.groups.all():
+            return True
+        
+        return False
 
 # The `CategoryListView` class in Python defines a view for listing and creating Category objects,
 # with a check to ensure only admin users can add a new category.
@@ -49,6 +60,8 @@ class MenuItemView(ListAPIView, ListCreateAPIView):
     def get_permissions(self):
         if self.request.method == 'POST':
             return [IsAdminUser()]
+        if self.request.method == 'PATCH':
+            return [IsAdminOrManager()]
         return [IsAuthenticated()]
     
 class SingleMenuItemView(RetrieveAPIView, RetrieveUpdateDestroyAPIView):
@@ -59,68 +72,37 @@ class SingleMenuItemView(RetrieveAPIView, RetrieveUpdateDestroyAPIView):
                 or self.request.method == 'DELETE' or self.request.method == 'PATCH':
             return [IsAdminUser()]
         return [IsAuthenticated()]
-    
-"""
-This Python function allows an system admin user to add or remove a specified user from the 'Manager'
-group.
 
-:param request: The `request` parameter in the code snippet represents the HTTP request object that
-Django receives when a client makes a request to the API endpoint. It contains information about the
-request, such as the method (POST, DELETE), data sent in the request body, headers, user
-authentication details, and more
-:return: The code snippet provided is a Django REST framework view function for managing users in
-the "Manager" group.
-"""
-@api_view(['POST', 'DELETE'])
-@permission_classes([IsAdminUser])
-def managers(request):
-    username = request.data['username']
-    if username:
-        user = get_object_or_404(User, username=username)
+
+# The `ManagerUsersView` class is a Django API view that lists and creates users who belong to the
+# 'Manager' group.
+class ManagerUsersView(ListCreateAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminUser]
+    
+    def get_queryset(self):
         managers = Group.objects.get(name='Manager')
-            
-        if request.method == 'POST':
-            managers.user_set.add(user)
-            message = f"User {username} added to manager group"
-            
-        if request.method == 'DELETE':
-            managers.user_set.remove(user)
-            message = f"User {username} deleted from manager group"
-            
-        return Response({"message":message})
+        return User.objects.filter(groups=managers)
     
-    return Response({"message":"error"}, status.HTTP_400_BAD_REQUEST)
+    def perform_create(self, serializer):
+        managers = Group.objects.get(name='Manager')
+        user = serializer.save()
+        user.groups.add(managers)
 
-"""
-This function allows an admin user to add or remove a user from the 'Manager' group based on a POST
-or DELETE request.
-
-:param request: The code you provided is a Django REST framework view function for managing delivery
-crew members. It allows adding or removing a user from the 'Manager' group based on the request
-method (POST or DELETE)
-:return: The code snippet defines a Django REST framework view function for managing delivery crew
-members. The function accepts POST and DELETE requests and requires the user to be an admin user.
-"""
-@api_view(['POST', 'DELETE'])
-@permission_classes([IsAdminUser])
-def delivery_crew(request):
-    username = request.data['username']
-    if username:
-        user = get_object_or_404(User, username=username)
-        managers = Group.objects.get(name='Delivery Crew')
-            
-        if request.method == 'POST':
-            managers.user_set.add(user)
-            message = f"User {username} added to delivery crew group"
-            
-        if request.method == 'DELETE':
-            managers.user_set.remove(user)
-            message = f"User {username} deleted from delivery crew group"
-            
-        return Response({"message":message})
+# This class is a Django REST framework view for managing users belonging to the "Delivery Crew"
+# group.
+class DeliveryCrewUsersView(ListCreateAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminOrManager]
     
-    return Response({"message":"error"}, status.HTTP_400_BAD_REQUEST)
-
+    def get_queryset(self):
+        delivery_crew = Group.objects.get(name='Delivery Crew')
+        return User.objects.filter(groups=delivery_crew)
+    
+    def perform_create(self, serializer):
+        delivery_crew = Group.objects.get(name='Delivery Crew')
+        user = serializer.save()
+        user.groups.add(delivery_crew)
 
 class CartView(ListCreateAPIView):
     serializer_class = CartSerializer
